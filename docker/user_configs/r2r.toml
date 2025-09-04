@@ -1,0 +1,296 @@
+################################################################################
+# Global Application Settings (AppConfig)
+################################################################################
+[app]
+# app settings are global available like `r2r_config.agent.app`
+project_name = "r2r_ciayn" # optional, can also set with `R2R_PROJECT_NAME` env var
+# Maximum number of documents per user (default from code: 100, sample: 10000)
+default_max_documents_per_user = 10000
+# Maximum number of chunks per user (default: 10000)
+default_max_chunks_per_user = 10000000
+# Maximum number of collections per user (default: 5)
+default_max_collections_per_user = 5000
+
+# Set the default max upload size to 20 GB for local testing
+default_max_upload_size = 21474836480
+
+# LLM used for user-facing output, like RAG replies
+quality_llm = "gemini/gemini-2.0-flash"#"gemini/gemini-2.0-flash-thinking-exp-01-21"
+# LLM used for fast internal operations, like deriving conversation names
+fast_llm = "gemini/gemini-2.0-flash"
+# LLM used for ingesting visual inputs
+vlm = "gemini/gemini-2.0-flash"
+
+# LLM used for audio transcription
+audio_lm = "gemini/gemini-2.0-flash"
+
+# Reasoning model, used for `research` agent
+reasoning_llm = "gemini/gemini-2.0-flash"#"gemini/gemini-2.0-flash-thinking-exp-01-21"
+# Planning model, used for `research` agent
+planning_llm = "gemini/gemini-2.0-flash"#"gemini/gemini-2.0-flash-thinking-exp-01-21"
+
+# A mapping from file extension to maximum upload size
+  [app.max_upload_size_by_type]
+  txt  = 21474836480
+  md   = 21474836480
+  tsv  = 21474836480
+  csv  = 21474836480
+  xml  = 21474836480
+  html = 21474836480
+  doc  = 21474836480
+  docx = 21474836480
+  ppt  = 21474836480
+  pptx = 21474836480
+  xls  = 21474836480
+  xlsx = 21474836480
+  odt  = 21474836480
+  pdf  = 21474836480
+  eml  = 21474836480
+  msg  = 21474836480
+  p7s  = 21474836480
+  bmp  = 21474836480
+  heic = 21474836480
+  jpeg = 21474836480
+  jpg  = 21474836480
+  png  = 21474836480
+  tiff = 21474836480
+  epub = 21474836480
+  rtf  = 21474836480
+  rst  = 21474836480
+  org  = 21474836480
+
+[agent]
+rag_agent_static_prompt = "static_rag_agent"
+rag_agent_dynamic_prompt = "dynamic_rag_agent"
+# tools = ["local_search", "content", "web_search"]
+# tools = ["local_search", "content"]
+rag_tools = ["search_file_descriptions", "search_file_knowledge", "get_file_content"] # can add  "web_search" | "web_scrape"
+# tools = ["search_file_knowledge", "content"]
+# The following tools are available to the `research` agent
+research_tools = ["rag", "reasoning", "critique", "python_executor"]
+################################################################################
+# Authentication Settings (AuthConfig)
+################################################################################
+[auth]
+provider = "r2r"
+# (Optional secret key for signing tokens)
+secret_key = ""
+# Lifetime for access tokens (in minutes)
+access_token_lifetime_in_minutes = 60000
+# Lifetime for refresh tokens (in days)
+refresh_token_lifetime_in_days = 7
+# Whether authentication is required
+require_authentication = false
+# Whether email verification is required
+require_email_verification = false
+# Default admin credentials
+default_admin_email = "admin@example.com"
+default_admin_password = "change_me_immediately"
+
+################################################################################
+# Completion / LLM Generation Settings (CompletionConfig and nested GenerationConfig)
+################################################################################
+[completion]
+provider = "r2r"
+# Maximum number of concurrent requests allowed
+concurrent_request_limit = 5
+
+  [completion.generation_config]
+  # Generation parameters
+  temperature = 0.1
+  top_p = 1.0
+  max_tokens_to_sample = 4096
+  stream = false
+  # Additional generation kwargs (empty table by default)
+  add_generation_kwargs = {}
+
+################################################################################
+# Cryptography Settings (CryptoConfig)
+################################################################################
+[crypto]
+provider = "bcrypt"
+################################################################################
+# Database Settings (DatabaseConfig and related nested settings)
+################################################################################
+[database]
+default_collection_name = "Default"
+default_collection_description = "Your default collection."
+collection_summary_system_prompt = "system"
+collection_summary_prompt = "collection_summary"
+enable_fts = false
+# batch_size = 1
+# kg_store_path = ""
+
+  # # PostgreSQL tuning settings
+  # [database.postgres_configuration_settings]
+  #   checkpoint_completion_target = 0.9
+  #   default_statistics_target = 100
+  #   effective_io_concurrency = 1
+  #   effective_cache_size = 524288
+  #   huge_pages = "try"
+  #   maintenance_work_mem = 65536
+  #   max_connections = 256
+  #   max_parallel_workers_per_gather = 2
+  #   max_parallel_workers = 8
+  #   max_parallel_maintenance_workers = 2
+  #   max_wal_size = 1024
+  #   max_worker_processes = 8
+  #   min_wal_size = 80
+  #   shared_buffers = 16384
+  #   statement_cache_size = 100
+  #   random_page_cost = 4.0
+  #   wal_buffers = 512
+  #   work_mem = 4096
+
+  # Graph creation settings
+  [database.graph_creation_settings]
+    graph_entity_description_prompt = "graph_entity_description"
+    graph_extraction_prompt = "graph_extraction"
+    entity_types = [] # if empty, all entities are extracted
+    relation_types = [] # if empty, all relations are extracted
+    automatic_deduplication = true # enable automatic deduplication of entities
+
+  # Graph enrichment settings
+  [database.graph_enrichment_settings]
+    graph_communities_prompt = "graph_communities"
+
+  [database.maintenance]
+    vacuum_schedule = "0 3 * * *"  # Run at 3:00 AM daily
+  # (Optional) Graph search settings – add fields as needed
+  [database.graph_search_settings]
+    # e.g., search_mode = "default"
+
+  # Rate limiting settings
+  [database.limits]
+    global_per_min = 60
+    route_per_min = 20
+    monthly_limit = 1000000
+
+  # Route-specific limits (empty by default)
+  [database.route_limits]
+    # e.g., "/api/search" = { global_per_min = 30, route_per_min = 10, monthly_limit = 5000 }
+
+  # User-specific limits (empty by default)
+  [database.user_limits]
+    # e.g., "user_uuid_here" = { global_per_min = 20, route_per_min = 5, monthly_limit = 2000 }
+
+################################################################################
+# Embedding Settings (EmbeddingConfig)
+################################################################################
+[embedding] #TODO: LiteLLM Allows passthrough, and gemini has a lot of options for nuanced embedding. <https://ai.google.dev/api/embeddings>
+provider = "litellm"
+# For basic applications, use `openai/text-embedding-3-small` with `base_dimension = 512`
+# For advanced applications, use `openai/text-embedding-3-large` with `base_dimension = 3072` and binary quantization
+base_model = "gemini/text-embedding-004"
+base_dimension = nan
+# Optional reranking settings (leave empty if not used)
+rerank_model = "" # reranking model
+rerank_url = ""
+batch_size = 1
+prefixes = {}   # Provide prefix overrides here if needed
+add_title_as_prefix = true
+concurrent_request_limit = 5
+max_retries = 3
+initial_backoff = 1.0
+max_backoff = 64.0
+# quantization_settings = { quantization_type = "FP32" }
+################################################################################
+# Completion Embedding Settings
+# (Usually mirrors the embedding settings; override if needed.)
+################################################################################
+[completion_embedding]
+# Generally this should be the same as the embedding config, but advanced users may want to run with a different provider to reduce latency
+provider = "litellm"
+base_model = "gemini/text-embedding-004"
+base_dimension = nan
+batch_size = 1
+add_title_as_prefix = true
+concurrent_request_limit = 5
+# litellm_kwargs = {}
+
+################################################################################
+# File Storage Settings
+################################################################################
+[file]
+provider = "postgres"
+
+################################################################################
+# Ingestion Settings (IngestionConfig and nested settings)
+################################################################################
+[ingestion]
+provider = "r2r"
+chunking_strategy = "recursive"
+chunk_size = 1024
+# Extra field handled by extra_fields – not defined explicitly in IngestionConfig:
+chunk_overlap = 512
+excluded_parsers = ["mp4"]
+automatic_extraction = true # enable automatic extraction of entities and relations
+vlm_batch_size=1
+vlm_ocr_one_page_per_chunk = true
+# Audio transcription and vision model settings
+audio_transcription_model = ""
+skip_document_summary = false
+document_summary_system_prompt = "system"
+document_summary_task_prompt = "summary"
+document_summary_max_length = 100000
+chunks_for_document_summary = 128
+document_summary_model = ""
+parser_overrides = {}
+
+  # Chunk enrichment settings
+  [ingestion.chunk_enrichment_settings]
+    chunk_enrichment_prompt = "chunk_enrichment"
+    enable_chunk_enrichment = false # disabled by default #BUG
+    n_chunks = 2 # the number of chunks (both preceding and succeeding) to use in enrichment
+
+  # Extra parsers (mapping from file type to parser name)
+  [ingestion.extra_parsers]
+    pdf = ["zerox", "ocr"]
+
+################################################################################
+# Logging Settings
+################################################################################
+[logging]
+provider = "r2r"
+log_table = "logs"
+log_info_table = "log_info"
+
+# [ocr]
+# provider = "mistral"
+# model = "mistral-ocr-latest"
+
+################################################################################
+# Prompt Settings
+################################################################################
+[prompt]
+provider = "r2r"
+
+################################################################################
+# Email Settings (EmailConfig)
+################################################################################
+[email]
+# Supported providers: "smtp", "console", "sendgrid", etc.
+provider = "console_mock" #FIXME: BUG. File "/app/core/main/assembly/factory.py", line 316, in create_email_provider 2025-04-23 22:06:56     raise ValueError(2025-04-23 22:06:56 ValueError: Email provider console not supported. ...
+### smtp_server = ""
+### smtp_port = 587
+### smtp_username = ""
+### smtp_password = ""
+### from_email = ""
+### use_tls = true
+### sendgrid_api_key = ""
+### mailersend_api_key = ""
+### verify_email_template_id = ""
+### reset_password_template_id = ""
+### password_changed_template_id = ""
+### frontend_url = ""
+### sender_name = ""
+
+################################################################################
+# Orchestration Settings (OrchestrationConfig)
+################################################################################
+[orchestration]
+provider = "simple"
+max_runs = 2048
+kg_creation_concurrency_limit = 32
+ingestion_concurrency_limit = 16
+kg_concurrency_limit = 4
