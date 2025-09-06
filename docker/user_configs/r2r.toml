@@ -4,30 +4,27 @@
 [app]
 # app settings are global available like `r2r_config.agent.app`
 project_name = "r2r_ciayn" # optional, can also set with `R2R_PROJECT_NAME` env var
-# Maximum number of documents per user (default from code: 100, sample: 10000)
-default_max_documents_per_user = 10000
-# Maximum number of chunks per user (default: 10000)
-default_max_chunks_per_user = 10000000
-# Maximum number of collections per user (default: 5)
-default_max_collections_per_user = 5000
+default_max_documents_per_user = 10_000
+default_max_chunks_per_user = 10_000_000
+default_max_collections_per_user = 5_000
 
 # Set the default max upload size to 20 GB for local testing
 default_max_upload_size = 21474836480
+# LLM used for internal operations, like deriving conversation names
+fast_llm = "gemini/gemini-2.5-flash-lite"
 
 # LLM used for user-facing output, like RAG replies
-quality_llm = "gemini/gemini-2.5-flash"#"gemini/gemini-2.0-flash-thinking-exp-01-21"
-# LLM used for fast internal operations, like deriving conversation names
-fast_llm = "gemini/gemini-2.5-flash-lite"
+quality_llm = "gemini/gemini-2.5-flash"
 # LLM used for ingesting visual inputs
 vlm = "gemini/gemini-2.5-flash"
 
-# LLM used for audio transcription
-audio_lm = "gemini/gemini-2.5-flash"
+# LLM used for transcription
+audio_lm = "gemini/gemini-2.5-flash-lite"
 
 # Reasoning model, used for `research` agent
-reasoning_llm = "gemini/gemini-2.5-pro"#"gemini/gemini-2.0-flash-thinking-exp-01-21"
+reasoning_llm = "gemini/gemini-2.5-pro"
 # Planning model, used for `research` agent
-planning_llm = "gemini/gemini-2.5-pro"#"gemini/gemini-2.0-flash-thinking-exp-01-21"
+planning_llm = "gemini/gemini-2.5-pro"
 
 # A mapping from file extension to maximum upload size
   [app.max_upload_size_by_type]
@@ -62,8 +59,7 @@ planning_llm = "gemini/gemini-2.5-pro"#"gemini/gemini-2.0-flash-thinking-exp-01-
 [agent]
 rag_agent_static_prompt = "static_rag_agent"
 rag_agent_dynamic_prompt = "dynamic_rag_agent"
-# tools = ["local_search", "content", "web_search"]
-# tools = ["local_search", "content"]
+# The following tools are available to the `rag` agent
 rag_tools = ["search_file_descriptions", "search_file_knowledge", "get_file_content"] # can add  "web_search" | "web_scrape"
 # tools = ["search_file_knowledge", "content"]
 # The following tools are available to the `research` agent
@@ -74,7 +70,7 @@ research_tools = ["rag", "reasoning", "critique", "python_executor"]
 [auth]
 provider = "r2r"
 # (Optional secret key for signing tokens)
-secret_key = ""
+# secret_key = ""
 # Lifetime for access tokens (in minutes)
 access_token_lifetime_in_minutes = 60000
 # Lifetime for refresh tokens (in days)
@@ -111,6 +107,12 @@ concurrent_request_limit = 5
 provider = "bcrypt"
 
 ################################################################################
+# File Storage Settings
+################################################################################
+[file]
+provider = "postgres"
+
+################################################################################
 # Database Settings (DatabaseConfig and related nested settings)
 ################################################################################
 [database]
@@ -118,30 +120,6 @@ default_collection_name = "Default"
 default_collection_description = "Your default collection."
 collection_summary_system_prompt = "system"
 collection_summary_prompt = "collection_summary"
-enable_fts = false
-# batch_size = 1
-# kg_store_path = ""
-
-  # # PostgreSQL tuning settings
-  # [database.postgres_configuration_settings]
-  #   checkpoint_completion_target = 0.9
-  #   default_statistics_target = 100
-  #   effective_io_concurrency = 1
-  #   effective_cache_size = 524288
-  #   huge_pages = "try"
-  #   maintenance_work_mem = 65536
-  #   max_connections = 256
-  #   max_parallel_workers_per_gather = 2
-  #   max_parallel_workers = 8
-  #   max_parallel_maintenance_workers = 2
-  #   max_wal_size = 1024
-  #   max_worker_processes = 8
-  #   min_wal_size = 80
-  #   shared_buffers = 16384
-  #   statement_cache_size = 100
-  #   random_page_cost = 4.0
-  #   wal_buffers = 512
-  #   work_mem = 4096
 
   # Graph creation settings
   [database.graph_creation_settings]
@@ -178,7 +156,9 @@ enable_fts = false
 ################################################################################
 # Embedding Settings (EmbeddingConfig)
 ################################################################################
-[embedding] #TODO: LiteLLM Allows passthrough, and gemini has a lot of options for nuanced embedding. <https://ai.google.dev/api/embeddings>
+
+[embedding]
+#TODO: LiteLLM Allows passthrough, and gemini has a lot of options for nuanced embedding. <https://ai.google.dev/api/embeddings>
 provider = "litellm"
 # For basic applications, use `openai/text-embedding-3-small` with `base_dimension = 512`
 # For advanced applications, use `openai/text-embedding-3-large` with `base_dimension = 3072` and binary quantization
@@ -187,10 +167,10 @@ base_dimension = nan
 # Optional reranking settings (leave empty if not used)
 rerank_model = "" # reranking model
 rerank_url = ""
-batch_size = 100
+batch_size = 128
 prefixes = {}   # Provide prefix overrides here if needed
 add_title_as_prefix = true
-concurrent_request_limit = 5
+concurrent_request_limit = 2
 max_retries = 6
 initial_backoff = 20
 max_backoff = 120
@@ -204,16 +184,10 @@ max_backoff = 120
 provider = "litellm"
 base_model = "gemini/text-embedding-004"
 base_dimension = nan
-batch_size = 1
+batch_size = 128
 add_title_as_prefix = true
-concurrent_request_limit = 5
+concurrent_request_limit = 2
 # litellm_kwargs = {}
-
-################################################################################
-# File Storage Settings
-################################################################################
-[file]
-provider = "postgres"
 
 ################################################################################
 # Ingestion Settings (IngestionConfig and nested settings)
@@ -224,7 +198,7 @@ chunking_strategy = "recursive"
 chunk_size = 2048
 # Extra field handled by extra_fields – not defined explicitly in IngestionConfig:
 chunk_overlap = 512
-excluded_parsers = ["mp4"]
+excluded_parsers = []
 automatic_extraction = true # enable automatic extraction of entities and relations
 vlm_batch_size=1
 vlm_max_tokens_to_sample=1024
@@ -237,7 +211,7 @@ document_summary_system_prompt = "system"
 document_summary_task_prompt = "summary"
 document_summary_max_length = 200000
 chunks_for_document_summary = 256
-document_summary_model = "gemini/gemini-2.5-flash"
+document_summary_model = "gemini/gemini-2.5-pro"
 parser_overrides = {}
 
   # Chunk enrichment settings
@@ -249,6 +223,10 @@ parser_overrides = {}
   # Extra parsers (mapping from file type to parser name)
   [ingestion.extra_parsers]
     pdf = ["zerox", "ocr"]
+
+# [ocr]
+# provider = "mistral"
+# model = "mistral-ocr-latest"
 
 ################################################################################
 # Orchestration Settings (OrchestrationConfig)
@@ -267,10 +245,6 @@ kg_concurrency_limit = 4
 provider = "r2r"
 log_table = "logs"
 log_info_table = "log_info"
-
-# [ocr]
-# provider = "mistral"
-# model = "mistral-ocr-latest"
 
 ################################################################################
 # Prompt Settings
