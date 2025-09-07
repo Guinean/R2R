@@ -1,3 +1,10 @@
+## task
+
+i added some instructions on tasks.md. I've asked previous for llms to do this and usually they make mistakes around pydantic settings, and how to use them well or right. Please take time to research and
+think very hard about how to use it how it is meant to be used, and as well as possible without needing to implement stuff from scratch unless truly necessary.
+
+I have downloaded the llm.txt for pydantic_settings and for r2r in the folder `llm_txt_resources`. Use that for grounding as appropriate, Fetch and web search has been causing claude issues lately.
+
 ## background
 
 r2r is set up to start by running the docker compose in the docker folder, and i generally want to run the "full" version. (/workspace/docker/compose.full.yaml)
@@ -32,7 +39,7 @@ I have forked it into this repo and want to make some changes to what they have.
   - i think docker secrets would be better. those secrets can point to files on the host outside of the versioned workspace, and so generally easier to protect from accidentally commiting.
 - configuration is also a challenge with r2r, and there are a lot of knobs to adjust and control, and defaults i want to overwrite
   - but its pretty verbose and the project is very actively developed (hence my fork). So sometimes new settings appear i need to account for, or existing settings have different meanings. So updating the fork and my interpretation of it needs extra care.
-  - I think using <https://github.com/pydantic/pydantic-settings> , <https://docs.pydantic.dev/latest/concepts/pydantic_settings/> might be a good method. The cli capability of pydantic settings is a potentially very nice to have thing. The one thing to be careful of is i don't really know all the things R2R does about the settings, in that i don't really know the potential options, or how to validate some of the entries.
+  - I think using <https://github.com/pydantic/pydantic-settings> , <https://docs.pydantic.dev/latest/concepts/pydantic_settings/>, <https://docs.pydantic.dev/latest/api/pydantic_settings/index.md>. These urls are causing errors for llm fetching so i've downloaded the llm.txt for pydantic settings might be a good method. The cli capability of pydantic settings is a potentially very nice to have thing. The one thing to be careful of is i don't really know all the things R2R does about the settings, in that i don't really know the potential options, or how to validate some of the entries.
   - some examples of things i might want to do at some point:
     - ability to create different versions of the embedding or ingestion (etc) config portions of the r2r.toml and able to choose between presets or may specific tweaks. to managing the r2r.toml,
     - able to swap out the compose ports to something different than the defaults, or ability to use another network that the host so that I can leave the ports the same and not have different instances conflict,
