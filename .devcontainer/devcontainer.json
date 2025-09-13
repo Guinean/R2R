@@ -3,7 +3,7 @@
   "build": {
     "dockerfile": "Dockerfile",
     "args": {
-      "TZ": "${localEnv:TZ:America/Los_Angeles}",
+      "TZ": "${localEnv:TZ:America/Detroit}",
       "CLAUDE_CODE_VERSION": "latest",
       "GIT_DELTA_VERSION": "0.18.2",
       "ZSH_IN_DOCKER_VERSION": "1.2.0"
@@ -58,8 +58,8 @@
   "mounts": [
     "source=claude-code-bashhistory-${devcontainerId},target=/commandhistory,type=volume",
     "source=claude-code-config-${devcontainerId},target=/home/pn/.claude,type=volume",
-    "source=~/secrets/google_api_key,target=/run/secrets/google_api_key,type=bind,readonly",
-    "source=~/secrets/gemini_api_key,target=/run/secrets/gemini_api_key,type=bind,readonly"
+    // "source=~/secrets/google_api_key,target=/run/secrets/google_api_key,type=bind,readonly",
+    // "source=~/secrets/gemini_api_key,target=/run/secrets/gemini_api_key,type=bind,readonly"
     // "source=~/secrets/next_public_r2r_default_email,target=/run/secrets/r2r_default_email,type=bind,readonly",
     // "source=~/secrets/next_public_r2r_default_password,target=/run/secrets/r2r_default_password,type=bind,readonly"
   ],
@@ -72,8 +72,8 @@
     "LANGUAGE": "en_US:en",
     // Environment variables for R2R
     // "R2R_PROJECT_NAME": "r2r_devcontainer",
-    "GOOGLE_API_KEY_FILE": "/run/secrets/google_api_key",
-    "GEMINI_API_KEY_FILE": "/run/secrets/gemini_api_key"
+    // "GOOGLE_API_KEY_FILE": "/run/secrets/google_api_key",
+    // "GEMINI_API_KEY_FILE": "/run/secrets/gemini_api_key"
     // "NEXT_PUBLIC_R2R_DEFAULT_EMAIL_FILE": "/run/secrets/r2r_default_email",
     // "NEXT_PUBLIC_R2R_DEFAULT_PASSWORD_FILE": "/run/secrets/r2r_default_password",
   },
