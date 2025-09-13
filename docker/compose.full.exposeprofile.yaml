@@ -1,31 +1,40 @@
+# R2R Full Stack with Docker Secrets Support
+# This version uses Docker secrets for sensitive configuration values
+# and supports project-specific configuration overrides.
+
 volumes:
   hatchet_certs:
-    name: hatchet_certs
+    name: ${COMPOSE_NETWORK:-}hatchet_certs
   hatchet_config:
-    name: hatchet_config
+    name: ${COMPOSE_NETWORK:-}hatchet_config
   hatchet_api_key:
-    name: hatchet_api_key
+    name: ${COMPOSE_NETWORK:-}hatchet_api_key
   hatchet_rabbitmq_data:
-    name: hatchet_rabbitmq_data
+    name: ${COMPOSE_NETWORK:-}hatchet_rabbitmq_data
   hatchet_rabbitmq_conf:
-    name: hatchet_rabbitmq_conf
+    name: ${COMPOSE_NETWORK:-}hatchet_rabbitmq_conf
   hatchet_postgres_data:
-    name: hatchet_postgres_data
+    name: ${COMPOSE_NETWORK:-}hatchet_postgres_data
   minio_data:
-    name: minio_data
+    name: ${COMPOSE_NETWORK:-}minio_data
   postgres_data:
-    name: postgres_data
+    name: ${COMPOSE_NETWORK:-}postgres_data
+
+# Docker secrets configuration
+# secrets:
+#   GEMINI_API_KEY:
+#     file: ${SECRETS_DIR:-~/secrets}/gemini_api_key
+#   GOOGLE_API_KEY:
+#     file: ${SECRETS_DIR:-~/secrets}/google_api_key
 
 services:
   postgres:
     image: pgvector/pgvector:pg16
     profiles: [postgres]
     env_file:
-      - ./env/postgres.env
+      - ${ENV_DIR:-./env}/postgres.env
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -35,17 +44,16 @@ services:
     command: >
       postgres
       -c max_connections=1024
+    networks:
+      - r2r
 
   minio:
     image: minio/minio
     profiles: [minio]
     env_file:
-      - ./env/minio.env
+      - ${ENV_DIR:-./env}/minio.env
     volumes:
       - minio_data:/data
-    ports:
-      - "9000:9000"
-      - "9001:9001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 10s
@@ -53,11 +61,13 @@ services:
       retries: 5
     restart: on-failure
     command: server /data --console-address ":9001"
+    networks:
+      - r2r
 
   hatchet-postgres:
     image: postgres:latest
     env_file:
-      - ./env/hatchet.env
+      - ${ENV_DIR:-./env}/hatchet.env
     volumes:
       - hatchet_postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -65,15 +75,14 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - r2r
 
   hatchet-rabbitmq:
     image: "rabbitmq:3-management"
     hostname: "hatchet-rabbitmq"
-    ports:
-      - "5673:5672"
-      - "15673:15672"
     env_file:
-      - ./env/hatchet.env
+      - ${ENV_DIR:-./env}/hatchet.env
     volumes:
       - hatchet_rabbitmq_data:/var/lib/rabbitmq
       - hatchet_rabbitmq_conf:/etc/rabbitmq/rabbitmq.conf
@@ -82,6 +91,8 @@ services:
       interval: 10s
       timeout: 10s
       retries: 5
+    networks:
+      - r2r
 
   hatchet-create-db:
     image: postgres:latest
@@ -89,21 +100,25 @@ services:
     volumes:
       - ./scripts:/scripts
     env_file:
-      - ./env/hatchet.env
+      - ${ENV_DIR:-./env}/hatchet.env
+    networks:
+      - r2r
 
   hatchet-migration:
     image: ghcr.io/hatchet-dev/hatchet/hatchet-migrate:v0.53.15
     env_file:
-      - ./env/hatchet.env
+      - ${ENV_DIR:-./env}/hatchet.env
     depends_on:
       hatchet-create-db:
         condition: service_completed_successfully
+    networks:
+      - r2r
 
   hatchet-setup-config:
     image: ghcr.io/hatchet-dev/hatchet/hatchet-admin:v0.53.15
     command: /hatchet/hatchet-admin quickstart --skip certs --generated-config-dir /hatchet/config --overwrite=false
     env_file:
-      - ./env/hatchet.env
+      - ${ENV_DIR:-./env}/hatchet.env
     volumes:
       - hatchet_certs:/hatchet/certs
       - hatchet_config:/hatchet/config
@@ -112,6 +127,8 @@ services:
         condition: service_completed_successfully
       hatchet-rabbitmq:
         condition: service_healthy
+    networks:
+      - r2r
 
   hatchet-engine:
     image: ghcr.io/hatchet-dev/hatchet/hatchet-engine:v0.53.15
@@ -120,10 +137,8 @@ services:
     depends_on:
       hatchet-setup-config:
         condition: service_completed_successfully
-    ports:
-      - "7077:7077"
     env_file:
-      - ./env/hatchet.env
+      - ${ENV_DIR:-./env}/hatchet.env
     volumes:
       - hatchet_certs:/hatchet/certs
       - hatchet_config:/hatchet/config
@@ -132,6 +147,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - r2r
 
   hatchet-dashboard:
     image: ghcr.io/hatchet-dev/hatchet/hatchet-dashboard:v0.53.15
@@ -141,12 +158,12 @@ services:
       hatchet-setup-config:
         condition: service_completed_successfully
     env_file:
-      - ./env/hatchet.env
+      - ${ENV_DIR:-./env}/hatchet.env
     volumes:
       - hatchet_certs:/hatchet/certs
       - hatchet_config:/hatchet/config
-    ports:
-      - "7274:80"
+    networks:
+      - r2r
 
   setup-token:
     image: ghcr.io/hatchet-dev/hatchet/hatchet-admin:v0.53.15
@@ -159,6 +176,8 @@ services:
     depends_on:
       hatchet-setup-config:
         condition: service_completed_successfully
+    networks:
+      - r2r
 
   unstructured:
     image: ragtoriches/unst-prod
@@ -167,24 +186,24 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - r2r
 
   graph_clustering:
     image: ragtoriches/cluster-prod
-    ports:
-      - "7276:7276"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:7276/health"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - r2r
 
   r2r:
     image: sciphiai/r2r:latest
-    ports:
-      - "7272:7272"
     env_file:
-      - ./env/r2r-full.env
-      - ../../../env/.env #this was my hack equivalent of docker secrets to allow my secrets to be stored outside the repo. This should be revised when moving to use docker secrets
+      - ${ENV_DIR:-./env}/r2r-full-no-secrets.env
+      - ${SECRET_ENV_DIR:-./env}/api_keys.env
     command: sh /scripts/start-r2r.sh
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:7272/v3/health"]
@@ -193,12 +212,10 @@ services:
       retries: 5
     restart: on-failure
     volumes:
-      - ./user_configs:/app/user_configs
-      - ./user_tools:/app/user_tools
+      - ${R2R_CONFIG_DIR:-./user_configs}:/app/user_configs
+      - ${R2R_CONFIG_DIR:-./user_tools}:/app/user_tools
       - hatchet_api_key:/hatchet_api_key:ro
       - ./scripts:/scripts
-    extra_hosts:
-      - host.docker.internal:host-gateway
     depends_on:
       setup-token:
         condition: service_completed_successfully
@@ -206,11 +223,78 @@ services:
         condition: service_healthy
       graph_clustering:
         condition: service_healthy
+    networks:
+      - r2r
 
   r2r-dashboard:
     image: sciphiai/r2r-dashboard:1.0.3
     env_file:
-      - ./env/r2r-dashboard.env
-      - ../../../env/.env #this was my hack equivalent of docker secrets to allow my secrets to be stored outside the repo. This should be revised when moving to use docker secrets
+      - ${ENV_DIR:-./env}/r2r-dashboard.env
+    networks:
+      - r2r
+
+### Services with Ports exposed via `expose` profile ###
+  postgres-exposed:
+    profiles: ["expose"]
+    extends:
+      service: postgres
     ports:
-      - "7273:3000"
+      - "${POSTGRES_PORT:-5432}:5432"
+
+  minio-exposed:
+    profiles: ["expose"]
+    extends:
+      service: minio
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+
+  hatchet-rabbitmq-exposed:
+    profiles: ["expose"]
+    extends:
+      service: hatchet-rabbitmq
+    ports:
+      - "${HATCHET_RABBITMQ_PORT:-5673}:5672"
+      - "${HATCHET_RABBITMQ_MGMT_PORT:-15673}:15672"
+
+  hatchet-engine-exposed:
+    profiles: ["expose"]
+    extends:
+      service: hatchet-engine
+    ports:
+      - "${HATCHET_ENGINE_PORT:-7077}:7077"
+
+  hatchet-dashboard-exposed:
+    profiles: ["expose"]
+    extends:
+      service: hatchet-dashboard
+    ports:
+      - "${HATCHET_DASHBOARD_PORT:-7274}:80"
+
+  graph_clustering-exposed:
+    profiles: ["expose"]
+    extends:
+      service: graph_clustering
+    ports:
+      - "${GRAPH_CLUSTERING_PORT:-7276}:7276"
+  
+  r2r-exposed:
+    profiles: ["expose"]
+    extends:
+      service: r2r
+    ports:
+      - "${R2R_PORT:-7272}:7272"
+    extra_hosts:
+      - host.docker.internal:host-gateway
+
+  r2r-dashboard-exposed:
+    profiles: ["expose"]
+    extends:
+      service: r2r-dashboard
+    ports:
+      - "${R2R_DASHBOARD_PORT:-7273}:3000"
+
+networks:
+  r2r:
+    name: ${COMPOSE_NETWORK:-r2r}
+    driver: bridge
