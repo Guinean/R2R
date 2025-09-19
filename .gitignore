@@ -2,6 +2,7 @@ js/sdk/**/*.js
 js/tests/*
 **/.DS_Store
 */.data
+py/build/*
 
 .env
 .gitignore

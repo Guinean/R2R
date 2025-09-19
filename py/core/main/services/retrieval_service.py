@@ -345,6 +345,7 @@ class RetrievalService(Service):
             extra = await self._generate_similar_queries(
                 query=query,
                 num_sub_queries=search_settings.num_sub_queries - 1,
+                generation_config=getattr(search_settings, 'generation_config', None)
             )
             sub_queries.extend(extra)
 
@@ -403,7 +404,10 @@ class RetrievalService(Service):
         )
 
     async def _generate_similar_queries(
-        self, query: str, num_sub_queries: int = 2
+        self,
+        query: str,
+        num_sub_queries: int = 2,
+        generation_config: Optional[GenerationConfig] = None,  # ← ADD THIS
     ) -> list[str]:
         """
         Use your LLM to produce 'similar' queries or rephrasings
@@ -428,6 +432,7 @@ class RetrievalService(Service):
 
         # For a short generation, we can set minimal tokens
         gen_config = GenerationConfig(
+            **(generation_config.model_dump() if generation_config else {}),  # ← PRESERVE VERTEXAI PARAMS
             model=self.config.app.fast_llm,
             max_tokens=128,
             temperature=0.8,
@@ -562,7 +567,8 @@ class RetrievalService(Service):
         """
         # 1) Generate hypothetical docs
         hyde_docs = await self._run_hyde_generation(
-            query=query, num_sub_queries=search_settings.num_sub_queries
+            query=query, num_sub_queries=search_settings.num_sub_queries,
+            generation_config=getattr(search_settings, 'generation_config', None)
         )
 
         chunk_all = []
@@ -900,6 +906,7 @@ class RetrievalService(Service):
         self,
         query: str,
         num_sub_queries: int = 2,
+        generation_config: Optional[GenerationConfig] = None,  # ← ADD THIS
     ) -> list[str]:
         """
         Calls the LLM with a 'HyDE' style prompt to produce multiple
@@ -916,6 +923,7 @@ class RetrievalService(Service):
 
         # Now call the LLM with that as the system or user prompt:
         completion_config = GenerationConfig(
+            **(generation_config.model_dump() if generation_config else {}),  # ← PRESERVE VERTEXAI PARAMS
             model=self.config.app.fast_llm,  # or whichever short/cheap model
             max_tokens=512,
             temperature=0.7,
